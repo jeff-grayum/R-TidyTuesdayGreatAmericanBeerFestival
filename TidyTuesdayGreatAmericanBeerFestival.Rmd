@@ -78,6 +78,19 @@ beer_awards %>%
        caption = "Source: Great American Beer Festival 1987 - 2020")
 
 beer_awards %>%
+  count(state, sort = TRUE) %>%
+  head(20) %>%
+  mutate(state = fct_reorder(state, n)) %>%
+  ggplot(aes(n, state)) +
+  geom_col() +
+  theme_simpsons() +
+  labs(title = "Which States brew the best beer?",
+       x = "Number of times a brewery has medaled at Great American Beer Festival",
+       y = "",
+       caption = "Source: Great American Beer Festival 1987 - 2020")
+
+
+beer_awards %>%
   count(beer_name, brewery, sort = TRUE) %>%
   head(20) %>%
   mutate(beer_name = fct_reorder(beer_name, n)) %>%
@@ -105,5 +118,56 @@ beer_awards %>%
   group_by(year) %>%
   count(category, sort = TRUE) %>%
   View()
+
+beer_awards %>%
+  filter(category == "IPA") %>%
+  count(beer_name, sort = TRUE) %>%
+  head(5) %>%
+  view()
+  mutate(beer_name = fct_reorder(beer_name, n)) %>%
+  ggplot(aes(n, beer_name)) +
+  geom_col()
+  
+  beer_awards %>%
+    filter(category == "American-Style Pale Ale") %>%
+    count(brewery, sort = TRUE) %>%
+    head(10) %>%
+    mutate(brewery = fct_reorder(brewery, n)) %>%
+    ggplot(aes(n, brewery)) +
+    geom_col() +
+    labs(title = "What brewery makes the best IPA?",
+         x = "Number of medals",
+         y = "", 
+         caption = "Source: Great American Beer Festival 1987 - 2020") +
+    theme_simpsons()
+```
+
+Okay, now for David's take.
+```{r}
+beer_awards %>%
+  count(year) %>%
+  ggplot(aes(year, n)) + 
+  geom_col() +
+  labs(title = "How many awards were handed out each year during the Great American Beer Festival?",
+       x = "Year",
+       y = "Number of medals awarded",
+       caption = "Sourch: Great American Beer Festival 1987 - 2020") +
+  theme_simpsons()
+
+beer_awards %>%
+  count(brewery, city, state, sort = TRUE) 
+
+beer_awards %>%
+  count(category, sort = TRUE)
+
+beer_awards %>%
+  filter(category == "Bock") %>%
+  view()
+```
+
+What are the most awarded beers?
+```{r}
+beer_awards %>%
+  count(beer_name, brewery, sort = TRUE)
 ```
 
