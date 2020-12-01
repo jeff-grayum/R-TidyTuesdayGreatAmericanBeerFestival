@@ -1,0 +1,109 @@
+---
+title: "TidyTuesdayGreatAmericanBeerFestival"
+author: "Jeff Grayum"
+date: "12/1/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading libraries:
+```{r}
+library(tidyverse)
+library(tidytuesdayR)
+library(ggthemes)
+library(tvthemes)
+library(scales)
+```
+
+Loading data:
+```{r}
+tuesdata <- tidytuesdayR::tt_load('2020-10-20')
+
+beer_awards <- tuesdata$beer_awards
+
+gold_medals <- beer_awards %>%
+  filter(medal == "Gold") %>%
+  view()
+```
+
+Initial analysis and some visualizations:
+```{r}
+beer_awards %>%
+  view()
+
+beer_awards %>%
+  distinct(year)
+
+gold_medals %>%
+  count(brewery, sort = TRUE) %>%
+  head(20) %>%
+  mutate(brewery = fct_reorder(brewery, n)) %>%
+  ggplot(aes(n, brewery)) + 
+  geom_col() +
+  labs(title = "Which breweries have won the most gold medals at the Great American Beer Festival",
+       subtitle = "Gold medals awarded from 1987 - 1920",
+       x = "Total gold medals",
+       y = "",
+       caption = "Source: Great American Beer Festival") +
+  theme_simpsons() 
+
+beer_awards %>%
+  count(brewery, sort = TRUE) %>%
+  head(20) %>%
+  mutate(brewery = fct_reorder(brewery, n)) %>%
+  ggplot(aes(n, brewery)) + 
+  geom_col() +
+  labs(title = "The twenty most awarded breweries in the North American Beer Festival",
+       subtitle = "Total medals awarded from 1987 - 1920",
+       x = "Total medals",
+       y = "",
+       caption = "Source: Great American Beer Festival") +
+  theme_simpsons() 
+
+beer_awards %>%
+  count(city, sort = TRUE) %>%
+  head(20) %>%
+  mutate(city = fct_reorder(city, n)) %>%
+  ggplot(aes(n, city)) +
+  geom_col() +
+  theme_simpsons() +
+  labs(title = "Which cities brew the best beer?",
+       x = "Number of times a brewery has medaled at Great American Beer Festival",
+       y = "",
+       caption = "Source: Great American Beer Festival 1987 - 2020")
+
+beer_awards %>%
+  count(beer_name, brewery, sort = TRUE) %>%
+  head(20) %>%
+  mutate(beer_name = fct_reorder(beer_name, n)) %>%
+  ggplot(aes(n, beer_name)) +
+  geom_col() +
+  labs(title = "What are the most highly-awarded beers at the Great American Beer Festival?",
+       x = "Number of medals won",
+       y = "",
+       caption = "Source: Great American Beer Festival 1987 - 2020") +
+  theme_simpsons()
+
+gold_medals %>%
+  count(beer_name, brewery, sort = TRUE) %>%
+  head(5) %>%
+  mutate(beer_name = fct_reorder(beer_name, n)) %>%
+  ggplot(aes(n, beer_name)) +
+  geom_col() +
+  labs(title = "Which beers have won the most gold medals at the Great American Beer Festival?",
+       x = "Number of medals won",
+       y = "",
+       caption = "Source: Great American Beer Festival 1987 - 2020") +
+  theme_simpsons()
+
+beer_awards %>%
+  group_by(year) %>%
+  count(category, sort = TRUE) %>%
+  View()
+```
+
