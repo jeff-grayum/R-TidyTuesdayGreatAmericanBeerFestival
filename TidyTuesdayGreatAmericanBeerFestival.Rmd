@@ -250,6 +250,22 @@ setdiff(state.abb, beer_awards$state)
 
 #We see that West Virginia has never won an award.  Probably because this isn't a moonshine data set.
 
+beer_awards %>%
+  count(state, medal) %>%
+  filter(fct_lump(state, 16, w = n) != "Other") %>%
+  mutate(state = fct_reorder(state, n, sum)) %>%
+  ggplot(aes(n, state, fill = medal)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  labs(title = "The states recieving the most awards at the Great American Beer Festival",
+       x = "Number of awards",
+       y = "",
+       caption = "Source: Great American Beer Festival, 1987 - 2020",
+       fill = "") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  scale_fill_manual(values = myColors)
+
 #Let's look at per capita award winning beers
 
 
@@ -258,4 +274,111 @@ setdiff(state.abb, beer_awards$state)
 TO DO
 -Choropleth (colored map) 
 -Per-capita award winning beers
+
+```{r}
+breweries <- read_csv("~/Downloads/archive/breweries.csv") %>%
+  rename(brewery_id = X1,
+         brewery = name) %>%
+  view()  
+
+
+beers <- read_csv("~/Downloads/beers.csv") %>%
+  rename(beer_name = beer) %>%
+  inner_join(breweries, by = "brewery_id") %>%
+  view()
+
+beers %>%
+  view()
+
+beers %>%
+  mutate(style = fct_lump_n(style, 10)) %>% 
+  filter(style != "NA") %>%
+  ggplot(aes(abv, fill = style)) + 
+  geom_histogram() +
+  labs(title = "ABV distribution",
+       x = "ABV",
+       y = "",
+       caption = "Source: Kraggle.com") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  scale_x_continuous(labels = percent)
+
+beers %>%
+  filter(!is.na(style)) %>%
+  count(style, sort = TRUE) %>%
+  head(20) %>%
+  mutate(style = fct_reorder(style, n)) %>%
+  ggplot(aes(n, style)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  labs(title = "The most popular styles of craft beer",
+       x = "",
+       y = "",
+       caption = "Source: Kraggle.com") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+breweries <- read_csv("~/Downloads/archive/breweries.csv") %>%
+  rename(brewery_id = X1,
+         brewery = name) %>%
+  view()
+
+breweries %>%
+  view()
+
+breweries %>%
+  count(city, sort = TRUE) %>%
+  head(20) %>%
+  mutate(city = fct_reorder(city, n)) %>%
+  ggplot(aes(n, city)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  labs(title = "Which cities have the most microbreweries?",
+       x = "",
+       y = "") 
+
+breweries %>%
+  count(state, sort = TRUE) %>%
+  head(20) %>%
+  mutate(state = fct_reorder(state, n)) %>%
+  ggplot(aes(n, state)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  labs(title = "Which states have the most microbreweries?",
+       x = "",
+       y = "") 
+  
+beers %>%
+  mutate(brewery = glue("{ brewery } ({ state })")) %>%
+  count(brewery, sort = TRUE) %>%
+  head(20) %>%
+  mutate(brewery = fct_reorder(brewery, n)) %>%
+  ggplot(aes(n, brewery)) +
+  geom_col() +
+  labs(title = "What craft breweries produce the greatest variety of beer?",
+       x = "",
+       y = "",
+       caption = "Source: CraftCans.com") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text(), 
+        text = element_text(family = "Times New Roman"))
+
+beers %>%
+  filter(state == "AZ") %>%
+  mutate(brewery = glue("{ brewery } ({ city })")) %>%
+  count(brewery, sort = TRUE) %>%
+  mutate(brewery = fct_reorder(brewery, n)) %>%
+  ggplot(aes(n, brewery)) +
+  geom_col() +
+  labs(title = "The biggest breweries in my home state of Ari - fucking - zona",
+       x = "",
+       y = "",
+       caption = "Source: CraftCans.com",
+       subtitle = "Note: Mother Road is the best brewery in AZ and is not on this list") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+```
+
 
