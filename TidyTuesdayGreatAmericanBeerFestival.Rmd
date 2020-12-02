@@ -18,13 +18,17 @@ library(tidytuesdayR)
 library(ggthemes)
 library(tvthemes)
 library(scales)
+library(glue)
 ```
 
 Loading data:
 ```{r}
 tuesdata <- tidytuesdayR::tt_load('2020-10-20')
 
-beer_awards <- tuesdata$beer_awards
+beer_awards <- tuesdata$beer_awards %>%
+  mutate(state = str_to_upper(state),
+         medal = fct_relevel(medal, c("Bronze", "Silver"))) 
+  
 
 gold_medals <- beer_awards %>%
   filter(medal == "Gold") %>%
@@ -169,5 +173,31 @@ What are the most awarded beers?
 ```{r}
 beer_awards %>%
   count(beer_name, brewery, sort = TRUE)
+
+beer_counts <- beer_awards %>%
+  count(beer_name, brewery, medal, city, state) 
+
+beer_counts %>%
+  pivot_wider(names_from = medal, values_from = n,
+              values_fill = list(n = 0)) %>%
+  mutate(total = Bronze + Silver + Gold) %>%
+  arrange(desc(total))
+```
+
+HERE'S A REALLY COOL TRICK ON HOW TO USE FILTER() AND FCT_LUMP() TO SHOW ONLY THE TWELVE MOST AWARDED BEERS!!
+```{r}
+beer_counts %>%
+  mutate(beer_name = glue("{ beer_name } ({ brewery })")) %>%
+  filter(fct_lump(beer_name, 20, w = n, ties.method = "first") != "Other")  %>%
+  mutate(beer_name = fct_reorder(beer_name, n, sum)) %>%
+  ggplot(aes(n, beer_name, fill = medal)) +
+  geom_col() +
+  labs(title = "The most awarded beers at the Great American Beer Festival",
+       x = "Number of Awards",
+       y = "",
+       fill = "", 
+       caption = "Source: Great American Beer Festival 1987 - 2020") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text())
 ```
 
