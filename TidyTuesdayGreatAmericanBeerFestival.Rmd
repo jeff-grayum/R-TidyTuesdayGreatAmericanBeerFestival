@@ -19,6 +19,7 @@ library(ggthemes)
 library(tvthemes)
 library(scales)
 library(glue)
+library(extrafont)
 ```
 
 Loading data:
@@ -196,8 +197,65 @@ beer_counts %>%
        x = "Number of Awards",
        y = "",
        fill = "", 
-       caption = "Source: Great American Beer Festival 1987 - 2020") +
+       caption = "Source: Great American Beer Festival, 1987 - 2020") +
   theme_fivethirtyeight() +
-  theme(axis.title = element_text())
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  scale_fill_manual(values = myColors)
+
+myColors <- c("#a37d0b", "#9bc4cc", "#ebda21")
 ```
+
+What breweries win the most awards?
+```{r}
+beer_awards %>%
+  count(brewery, sort = TRUE)
+
+by_brewery <- beer_awards %>%
+  group_by(brewery) %>%
+  summarize(n_medals = n(),
+            n_beers = n_distinct(beer_name),
+            weighted_medals = sum(as.integer(medal)), #medals are already factored
+            n_gold = sum(medal == "Gold")) %>% 
+  arrange(desc(n_medals)) %>%
+  view()
+
+beer_awards %>%
+  count(brewery, medal) %>%
+  filter(fct_lump(brewery, 16, w = n) != "Other") %>%
+  mutate(brewery = fct_reorder(brewery, n, sum)) %>%
+  ggplot(aes(n, brewery, fill = medal)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  labs(title = "The most awarded breweries at the Great American Beer Festival",
+       x = "Number of awards",
+       y = "",
+       caption = "Source: Great American Beer Festival, 1987 - 2020",
+       fill = "") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  scale_fill_manual(values = myColors)
+```
+
+Now, let's look at the states!
+```{r}
+beer_awards %>%
+  count(state, sort = TRUE)
+
+# SET OF INTERNAL DATA CALLED STATE.ABB!!
+state.abb
+
+#We can compare it to our count of states using setdiff() to see if any are missing.
+setdiff(state.abb, beer_awards$state)
+
+#We see that West Virginia has never won an award.  Probably because this isn't a moonshine data set.
+
+#Let's look at per capita award winning beers
+
+
+```
+
+TO DO
+-Choropleth (colored map) 
+-Per-capita award winning beers
 
