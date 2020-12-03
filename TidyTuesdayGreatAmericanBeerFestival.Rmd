@@ -20,6 +20,8 @@ library(tvthemes)
 library(scales)
 library(glue)
 library(extrafont)
+install.packages("tidylo")
+library(tidylo)
 ```
 
 Loading data:
@@ -379,6 +381,29 @@ beers %>%
   theme_fivethirtyeight() +
   theme(axis.title = element_text(),
         text = element_text(family = "Times New Roman"))
+
 ```
 
+
+Let's look at a combination of category and state.
+```{r}
+#First filter for common states
+
+beer_awards %>%
+  filter(fct_lump(state, 9) != "Other",
+         fct_lump(category, 9) != "Other") %>%
+  count(state, category) %>%
+  complete(state, category, fill = list(n = 0)) %>%
+  bind_log_odds(state, category, n) %>%
+  ggplot(aes(log_odds_weighted, category)) +
+  geom_col() +
+  facet_wrap(~ state) +
+  labs(title = "Representation of categores of beer in each state",
+       x = "Log odds weighted",
+       y = "",
+       caption = "Source: CraftCans.com") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) 
+```
 
