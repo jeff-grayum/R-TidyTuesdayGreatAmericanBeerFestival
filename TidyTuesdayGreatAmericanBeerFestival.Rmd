@@ -20,8 +20,12 @@ library(tvthemes)
 library(scales)
 library(glue)
 library(extrafont)
-install.packages("tidylo")
+#install.packages("tidylo")
 library(tidylo)
+library(tidytext)
+library(broom)
+#install.packages("maps")
+library(maps)
 ```
 
 Loading data:
@@ -390,20 +394,107 @@ Let's look at a combination of category and state.
 #First filter for common states
 
 beer_awards %>%
-  filter(fct_lump(state, 9) != "Other",
-         fct_lump(category, 9) != "Other") %>%
+  filter(fct_lump(state, 12) != "Other",
+         fct_lump(category, 10) != "Other") %>%
   count(state, category) %>%
   complete(state, category, fill = list(n = 0)) %>%
   bind_log_odds(state, category, n) %>%
-  ggplot(aes(log_odds_weighted, category)) +
+  mutate(state = fct_reorder(state, -n, sum)) %>%
+  mutate(category = reorder_within(category, log_odds_weighted, state)) %>%
+  ggplot(aes(log_odds_weighted, category, fill = log_odds_weighted > 0)) +
   geom_col() +
+  scale_y_reordered() +
+  facet_wrap(~ state, scales = "free_y") +
+  labs(title = "Representation of categories of beer in each state",
+       subtitle = "Representation judged by awards recieved at the Great American Beer Festival",
+       x = "Weighted log-odds",
+       y = "",
+       caption = "Source: CraftCans.com") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
+```
+
+
+Let's look at states over time!
+```{r}
+beer_awards %>%
+  count(year, state, sort = TRUE)
+
+beer_awards %>%
+  add_count(year, name = "year_total")
+
+by_year_state <- beer_awards %>%
+  add_count(year, name = "year_total") %>%
+  mutate(state = fct_lump(state, 9)) %>%
+  count(year, state, year_total, sort = TRUE) %>%
+  mutate(pct_year = n / year_total)
+
+by_year_state %>%
+  filter(state != "Other") %>%
+  ggplot(aes(year, pct_year, color = state)) +
+  geom_line() + 
+  expand_limits(y = 0) +
   facet_wrap(~ state) +
-  labs(title = "Representation of categores of beer in each state",
-       x = "Log odds weighted",
+  labs(title = "Percentage of awards won each year at the Great American Beer Festival",
+       x = "",
+       y = "",
+       caption = "Source: CraftCans.com") +
+  theme_fivethirtyeight() +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none") +
+  scale_y_continuous(labels = percent)
+
+#There will be a lot of "noise" in early years, since we had fewer categories and less beers.  We can compensate for this poor data with logistic regression!!
+
+
+
+
+by_year_state %>%
+  filter(state == "CA") %>%
+  glm(cbind(n, year_total - n) ~ year, 
+      data = ., 
+      family = "binomial") %>%
+  summary()
+
+by_year_state %>%
+  filter(state != "Other") %>%
+  mutate(state = state.name[match(state, state.abb)]) %>%
+  group_by(state) %>%
+  summarize(model = list(glm(cbind(n, year_total - n) ~year, family = "binomial")))%>%
+  mutate(tidied = map(model, tidy, conf.int = TRUE)) %>%
+  unnest(tidied) %>%
+  filter(term == "year") %>%
+  mutate(p.value = format.pval(p.value),
+         state = fct_reorder(state, estimate)) %>%
+  ggplot(aes(estimate, state)) +
+  geom_point() +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.1) +
+  labs(x = "Estimated slope",
+       title = "Which states become more ore less frequent medal winners?", 
        y = "",
        caption = "Source: CraftCans.com") +
   theme_fivethirtyeight() +
   theme(axis.title = element_text(),
         text = element_text(family = "Times New Roman")) 
+
+
 ```
 
+A quick chloropleth (heat map) !!
+```{r}
+beer_awards %>%
+  mutate(state = str_to_lower(state.name[match(state, state.abb)])) %>%
+  count(state) %>%
+  right_join(map_data("state"), by = c(state = "region")) %>%
+  ggplot(aes(long, lat, fill = n, group = group)) +
+  geom_polygon() +
+  theme_map() +
+  labs(fill = "Number of award winning beers",
+       title = "A map of which states have been most successful at the Great American Beer Festival",
+       caption = "Source: CraftCans.com") 
+  
+  
